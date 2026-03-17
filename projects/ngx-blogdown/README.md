@@ -1,63 +1,143 @@
-# NgBlog
+# @centrolabs/ngx-blogdown
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.0.
+A lightweight Angular library for building markdown-powered blogs. You handle the layout, we handle the pipeline.
 
-## Code scaffolding
-
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+## Installation
 
 ```bash
-ng generate component component-name
+npm install @centrolabs/ngx-blogdown marked
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
+## Setup
+
+### 1. Provide the library
+
+```ts
+import { provideHttpClient } from '@angular/common/http';
+import { provideNgBlogdown } from '@centrolabs/ngx-blogdown';
+
+bootstrapApplication(AppComponent, {
+  providers: [
+    provideHttpClient(),
+    provideNgBlogdown({
+      indexPath: '/blog/index.json',
+      postsDir: '/blog/posts',
+    }),
+  ],
+});
+```
+
+### 2. Write your posts
+
+Create markdown files with YAML frontmatter in your posts directory:
+
+```markdown
+title: My First Post
+date: 2026-01-15
+cover: /images/first-post.png
+tagline: A short description of this post
+author: Jane Doe
+---
+# My First Post
+
+Write your content here using **markdown**.
+```
+
+### 3. Generate the index
+
+Use the bundled CLI to generate a JSON index from your markdown files:
 
 ```bash
-ng generate --help
+npx ngx-blogdown-index --postsDir src/content/posts --out src/content/index.json
 ```
 
-## Building
+This scans all `.md` files, extracts frontmatter, and outputs a sorted JSON index.
 
-To build the library, run:
+## Usage
 
-```bash
-ng build ng-blog
+Inject `BlogService` anywhere you need blog data:
+
+```ts
+import { BlogService, BlogPostMeta } from '@centrolabs/ngx-blogdown';
+
+@Component({
+  template: `
+    @for (post of posts; track post.slug) {
+      <article>
+        <h2>{{ post.title }}</h2>
+        <p>{{ post.tagline }}</p>
+      </article>
+    }
+  `,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class BlogListComponent {
+  private blogService = inject(BlogService);
+  posts: BlogPostMeta[] = [];
+
+  async ngOnInit() {
+    this.posts = await this.blogService.getPosts();
+  }
+}
 ```
 
-This command will compile your project, and the build artifacts will be placed in the `dist/` directory.
+### Rendering a single post
 
-### Publishing the Library
-
-Once the project is built, you can publish your library by following these steps:
-
-1. Navigate to the `dist` directory:
-   ```bash
-   cd dist/ng-blog
-   ```
-
-2. Run the `npm publish` command to publish your library to the npm registry:
-   ```bash
-   npm publish
-   ```
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
-```bash
-ng test
+```ts
+const post = await this.blogService.getPost('my-first-post');
+if (post) {
+  // post.htmlContent contains the rendered HTML
+}
 ```
 
-## Running end-to-end tests
+### SEO tags
 
-For end-to-end (e2e) testing, run:
-
-```bash
-ng e2e
+```ts
+const meta = posts.find(p => p.slug === 'my-first-post')!;
+const seo = this.blogService.getSeoTags(meta);
+// { title, description, image, date, author }
 ```
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
+## API
 
-## Additional Resources
+### `provideNgBlogdown(config)`
 
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+Registers the library providers. Call this in your application bootstrap.
+
+| Parameter          | Type     | Description                              |
+| ------------------ | -------- | ---------------------------------------- |
+| `config.indexPath` | `string` | Path to the JSON index file              |
+| `config.postsDir`  | `string` | Directory where markdown files are served |
+
+### `BlogService`
+
+| Method                   | Returns                    | Description                                      |
+| ------------------------ | -------------------------- | ------------------------------------------------ |
+| `getPosts()`             | `Promise<BlogPostMeta[]>`  | Fetches all post metadata. Cached after first call. |
+| `getPost(slug)`          | `Promise<BlogPost \| null>` | Fetches and renders a single post by slug.        |
+| `getSeoTags(postMeta)`   | `SeoTags`                  | Derives SEO meta tags from post metadata.        |
+
+### CLI: `ngx-blogdown-index`
+
+```
+ngx-blogdown-index --postsDir <path> --out <file>
+```
+
+| Flag         | Description                                |
+| ------------ | ------------------------------------------ |
+| `--postsDir` | Directory containing `.md` files           |
+| `--out`      | Output path for the generated JSON index   |
+
+The generated index is sorted by date (newest first). Slugs are derived from filenames (lowercased, spaces replaced with hyphens).
+
+## Peer Dependencies
+
+| Package          | Version   |
+| ---------------- | --------- |
+| `@angular/core`  | `^20.3.0` |
+| `@angular/common`| `^20.3.0` |
+| `marked`         | `^17.0.0` |
+
+## License
+
+MIT
