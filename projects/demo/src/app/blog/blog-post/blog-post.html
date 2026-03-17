@@ -1,0 +1,12 @@
+@if (post(); as p) {
+  <article class="post">
+    <a routerLink="/" class="back-link">← Back to posts</a>
+    <header>
+      <h1>{{ p.title }}</h1>
+      <span class="meta">{{ p.date }} — {{ p.author }}</span>
+    </header>
+    <div class="content" [innerHTML]="p.htmlContent"></div>
+  </article>
+} @else {
+  <div class="loading">Loading...</div>
+}

@@ -1,0 +1,12 @@
+<div class="blog-list">
+  <h1>Blog</h1>
+  @for (post of posts(); track post.slug) {
+    <article class="post-card">
+      <a [routerLink]="['/blog', post.slug]" class="post-link">
+        <h2>{{ post.title }}</h2>
+        <p class="tagline">{{ post.tagline }}</p>
+        <span class="meta">{{ post.date }} — {{ post.author }}</span>
+      </a>
+    </article>
+  }
+</div>

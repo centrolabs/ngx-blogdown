@@ -56,7 +56,7 @@
                 "input": "projects/demo/public"
               }
             ],
-            "styles": ["projects/demo/src/styles.css"],
+            "styles": ["projects/demo/src/styles.scss"],
             "server": "projects/demo/src/main.server.ts",
             "outputMode": "server",
             "security": {
@@ -115,7 +115,7 @@
                 "input": "projects/demo/public"
               }
             ],
-            "styles": ["projects/demo/src/styles.css"]
+            "styles": ["projects/demo/src/styles.scss"]
           }
         },
         "lint": {

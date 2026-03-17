@@ -1,0 +1,77 @@
+.post {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+
+  header {
+    margin-bottom: 2rem;
+
+    h1 {
+      font-size: 2rem;
+      margin: 0 0 0.5rem;
+      font-weight: 700;
+    }
+  }
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  color: #3b82f6;
+  text-decoration: none;
+  font-size: 0.9rem;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.meta {
+  font-size: 0.85rem;
+  color: #888;
+}
+
+.content {
+  line-height: 1.7;
+  font-size: 1.05rem;
+
+  ::ng-deep {
+    h1, h2, h3 {
+      margin-top: 1.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    p {
+      margin-bottom: 1rem;
+    }
+
+    code {
+      background: #f3f4f6;
+      padding: 0.15em 0.4em;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+
+    pre {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 1rem;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin-bottom: 1rem;
+
+      code {
+        background: none;
+        padding: 0;
+        color: inherit;
+      }
+    }
+  }
+}
+
+.loading {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+  color: #888;
+}

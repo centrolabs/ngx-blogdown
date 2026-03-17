@@ -1,0 +1,47 @@
+.blog-list {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+
+  h1 {
+    font-size: 2rem;
+    margin-bottom: 2rem;
+    font-weight: 700;
+  }
+}
+
+.post-card {
+  border-bottom: 1px solid #e2e2e2;
+  padding: 1.5rem 0;
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.post-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+
+  &:hover h2 {
+    color: #3b82f6;
+  }
+
+  h2 {
+    font-size: 1.35rem;
+    margin: 0 0 0.4rem;
+    transition: color 0.2s;
+  }
+}
+
+.tagline {
+  margin: 0 0 0.5rem;
+  color: #555;
+  font-size: 0.95rem;
+}
+
+.meta {
+  font-size: 0.8rem;
+  color: #888;
+}
