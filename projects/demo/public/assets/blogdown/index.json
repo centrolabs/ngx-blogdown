@@ -1,0 +1,20 @@
+[
+  {
+    "slug": "hello-world",
+    "filename": "hello-world.md",
+    "title": "Hello World",
+    "date": "2026-03-17",
+    "cover": "",
+    "tagline": "A first post to test ngx-blogdown",
+    "author": "Demo Author"
+  },
+  {
+    "slug": "second-post",
+    "filename": "second-post.md",
+    "title": "Second Post",
+    "date": "2026-03-16",
+    "cover": "",
+    "tagline": "Another post to verify listing works",
+    "author": "Demo Author"
+  }
+]

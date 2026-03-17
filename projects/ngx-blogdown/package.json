@@ -1,0 +1,21 @@
+{
+  "name": "ngx-blogdown",
+  "version": "1.0.0",
+  "description": "A lightweight Angular library for building markdown-powered blogs. You handle the layout, we handle the pipeline.",
+  "peerDependencies": {
+    "@angular/common": "^20.3.0",
+    "@angular/core": "^20.3.0",
+    "marked": "^17.0.0"
+  },
+  "dependencies": {
+    "tslib": "^2.3.0"
+  },
+  "sideEffects": false,
+  "bin": {
+    "ngx-blogdown-index": "./bin/ngx-blogdown-index.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/centrolabs/ngx-blogdown"
+  }
+}

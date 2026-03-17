@@ -6,7 +6,9 @@
     "start": "ng serve",
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "serve:ssr:demo": "node dist/demo/server/server.mjs",
+    "lint": "ng lint"
   },
   "prettier": {
     "printWidth": 100,
@@ -27,20 +29,31 @@
     "@angular/core": "^20.2.0",
     "@angular/forms": "^20.2.0",
     "@angular/platform-browser": "^20.2.0",
+    "@angular/platform-server": "^20.2.0",
     "@angular/router": "^20.2.0",
+    "@angular/ssr": "^20.3.20",
+    "express": "^5.1.0",
+    "marked": "^17.0.4",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
+    "@angular/build": "^20.3.20",
     "@angular/cli": "^20.2.2",
     "@angular/compiler-cli": "^20.2.0",
+    "@types/express": "^5.0.6",
     "@types/jasmine": "~5.1.0",
+    "@types/node": "^20.17.19",
+    "angular-eslint": "21.0.1",
+    "eslint": "^9.39.1",
     "jasmine-core": "~5.9.0",
     "karma": "~6.4.0",
     "karma-chrome-launcher": "~3.2.0",
     "karma-coverage": "~2.2.0",
     "karma-jasmine": "~5.1.0",
     "karma-jasmine-html-reporter": "~2.1.0",
-    "typescript": "~5.9.2"
+    "ng-packagr": "^20.3.0",
+    "typescript": "~5.9.2",
+    "typescript-eslint": "8.46.4"
   }
 }
