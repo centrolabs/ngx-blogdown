@@ -1,0 +1,29 @@
+name: Publish to npm
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      - run: npx ng lint ngx-blogdown
+      - run: npx ng test ngx-blogdown --no-watch --no-progress --browsers=ChromeHeadless
+      - run: node --test projects/ngx-blogdown/bin/ngx-blogdown-index.spec.mjs
+      - run: npx ng build ngx-blogdown --configuration=production
+      - run: npm publish --provenance --access public
+        working-directory: dist/ngx-blogdown
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
