@@ -5,6 +5,11 @@ import { marked } from 'marked';
 import { BlogPost, BlogPostMeta, SeoTags } from './blog.models';
 import { NG_BLOG_CONFIG } from './blog.config';
 
+/**
+ * Core service for fetching and rendering markdown blog posts.
+ *
+ * Provided via {@link provideNgBlogdown}. Requires `HttpClient` to be available.
+ */
 @Injectable()
 export class BlogService {
   private http = inject(HttpClient);
@@ -12,6 +17,11 @@ export class BlogService {
 
   private indexCache = signal<BlogPostMeta[] | null>(null);
 
+  /**
+   * Fetches the blog post index. Results are cached in memory after the first call.
+   *
+   * @returns All blog post metadata from the configured index path.
+   */
   async getPosts(): Promise<BlogPostMeta[]> {
     if (this.indexCache()) return this.indexCache()!;
 
@@ -20,6 +30,13 @@ export class BlogService {
     return posts;
   }
 
+  /**
+   * Fetches a single blog post by its slug, parses its markdown body into HTML,
+   * and strips the YAML frontmatter.
+   *
+   * @param slug - The URL-friendly post identifier to look up.
+   * @returns The full blog post with rendered HTML, or `null` if not found.
+   */
   async getPost(slug: string): Promise<BlogPost | null> {
     const posts = await this.getPosts();
     const meta = posts.find((p) => p.slug === slug);
@@ -40,6 +57,12 @@ export class BlogService {
     return { ...meta, htmlContent };
   }
 
+  /**
+   * Derives SEO meta tags from a post's metadata.
+   *
+   * @param postMeta - The post metadata to extract tags from.
+   * @returns SEO-friendly tag values for use in `<meta>` elements.
+   */
   getSeoTags(postMeta: BlogPostMeta): SeoTags {
     return {
       title: postMeta.title,
