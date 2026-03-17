@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.2.0] - 2026-03-17
+
+### Fixed
+
+- Included `bin/` directory in published package so `ngx-blogdown-index` CLI is available when installed as a dependency.
+
 ## [1.1.0] - 2026-03-17
 
 ### Changed
