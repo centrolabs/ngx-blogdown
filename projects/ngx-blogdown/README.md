@@ -5,7 +5,7 @@ A lightweight Angular library for building markdown-powered blogs. You handle th
 ## Installation
 
 ```bash
-npm install @centrolabs/ngx-blogdown marked
+npm install @centrolabs/ngx-blogdown marked js-yaml
 ```
 
 ## Setup
@@ -37,7 +37,9 @@ date: 2026-01-15
 cover: /images/first-post.png
 tagline: A short description of this post
 author: Jane Doe
+
 ---
+
 # My First Post
 
 Write your content here using **markdown**.
@@ -58,7 +60,15 @@ This scans all `.md` files, extracts frontmatter, and outputs a sorted JSON inde
 Inject `BlogService` anywhere you need blog data:
 
 ```ts
-import { BlogService, BlogPostMeta } from '@centrolabs/ngx-blogdown';
+import { BlogService, BlogPostBase } from '@centrolabs/ngx-blogdown';
+
+// Extend BlogPostBase with your own frontmatter fields
+interface MyPost extends BlogPostBase {
+  date: string;
+  tagline: string;
+  cover: string;
+  author: string;
+}
 
 @Component({
   template: `
@@ -73,10 +83,10 @@ import { BlogService, BlogPostMeta } from '@centrolabs/ngx-blogdown';
 })
 export class BlogListComponent {
   private blogService = inject(BlogService);
-  posts: BlogPostMeta[] = [];
+  posts: MyPost[] = [];
 
   async ngOnInit() {
-    this.posts = await this.blogService.getPosts();
+    this.posts = await this.blogService.getPosts<MyPost>();
   }
 }
 ```
@@ -84,16 +94,17 @@ export class BlogListComponent {
 ### Rendering a single post
 
 ```ts
-const post = await this.blogService.getPost('my-first-post');
+const post = await this.blogService.getPost<MyPost>('my-first-post');
 if (post) {
   // post.htmlContent contains the rendered HTML
+  // post.date, post.author, etc. are typed
 }
 ```
 
 ### SEO tags
 
 ```ts
-const meta = posts.find(p => p.slug === 'my-first-post')!;
+const meta = posts.find((p) => p.slug === 'my-first-post')!;
 const seo = this.blogService.getSeoTags(meta);
 // { title, description, image, date, author }
 ```
@@ -104,18 +115,18 @@ const seo = this.blogService.getSeoTags(meta);
 
 Registers the library providers. Call this in your application bootstrap.
 
-| Parameter          | Type     | Description                              |
-| ------------------ | -------- | ---------------------------------------- |
-| `config.indexPath` | `string` | Path to the JSON index file              |
+| Parameter          | Type     | Description                               |
+| ------------------ | -------- | ----------------------------------------- |
+| `config.indexPath` | `string` | Path to the JSON index file               |
 | `config.postsDir`  | `string` | Directory where markdown files are served |
 
 ### `BlogService`
 
-| Method                   | Returns                    | Description                                      |
-| ------------------------ | -------------------------- | ------------------------------------------------ |
-| `getPosts()`             | `Promise<BlogPostMeta[]>`  | Fetches all post metadata. Cached after first call. |
-| `getPost(slug)`          | `Promise<BlogPost \| null>` | Fetches and renders a single post by slug.        |
-| `getSeoTags(postMeta)`   | `SeoTags`                  | Derives SEO meta tags from post metadata.        |
+| Method                 | Returns                        | Description                                         |
+| ---------------------- | ------------------------------ | --------------------------------------------------- |
+| `getPosts<T>()`        | `Promise<T[]>`                 | Fetches all post metadata. Cached after first call. |
+| `getPost<T>(slug)`     | `Promise<BlogPost<T> \| null>` | Fetches and renders a single post by slug.          |
+| `getSeoTags(postMeta)` | `SeoTags`                      | Derives SEO meta tags from post metadata.           |
 
 ### CLI: `ngx-blogdown-index`
 
@@ -123,20 +134,21 @@ Registers the library providers. Call this in your application bootstrap.
 ngx-blogdown-index --postsDir <path> --out <file>
 ```
 
-| Flag         | Description                                |
-| ------------ | ------------------------------------------ |
-| `--postsDir` | Directory containing `.md` files           |
-| `--out`      | Output path for the generated JSON index   |
+| Flag         | Description                              |
+| ------------ | ---------------------------------------- |
+| `--postsDir` | Directory containing `.md` files         |
+| `--out`      | Output path for the generated JSON index |
 
 The generated index is sorted by date (newest first). Slugs are derived from filenames (lowercased, spaces replaced with hyphens).
 
 ## Peer Dependencies
 
-| Package          | Version   |
-| ---------------- | --------- |
-| `@angular/core`  | `^20.3.0` |
-| `@angular/common`| `^20.3.0` |
-| `marked`         | `^17.0.0` |
+| Package           | Version    |
+| ----------------- | ---------- |
+| `@angular/core`   | `>=20.3.0` |
+| `@angular/common` | `>=20.3.0` |
+| `js-yaml`         | `^4.1.0`   |
+| `marked`          | `^17.0.0`  |
 
 ## License
 

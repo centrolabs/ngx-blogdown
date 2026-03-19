@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { BlogPostMeta, BlogService } from 'ngx-blogdown';
+import { BlogService } from 'ngx-blogdown';
+import { DemoPost } from '../demo-post';
 
 @Component({
   selector: 'app-blog-list',
@@ -11,9 +12,9 @@ import { BlogPostMeta, BlogService } from 'ngx-blogdown';
 })
 export default class BlogListComponent {
   private blog = inject(BlogService);
-  posts = signal<BlogPostMeta[]>([]);
+  posts = signal<DemoPost[]>([]);
 
   constructor() {
-    this.blog.getPosts().then((posts) => this.posts.set(posts));
+    this.blog.getPosts<DemoPost>().then((posts) => this.posts.set(posts));
   }
 }

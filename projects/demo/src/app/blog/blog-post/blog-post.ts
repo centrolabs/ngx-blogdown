@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, DestroyRef, inject, signal } from '
 import { Meta, Title } from '@angular/platform-browser';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { BlogPost, BlogService } from 'ngx-blogdown';
+import { DemoPost } from '../demo-post';
 
 @Component({
   selector: 'app-blog-post',
@@ -17,14 +18,14 @@ export default class BlogPostComponent {
   private title = inject(Title);
   private destroyRef = inject(DestroyRef);
 
-  post = signal<BlogPost | null>(null);
+  post = signal<BlogPost<DemoPost> | null>(null);
 
   private defaultTitle = 'ngx-blogdown Demo';
   private defaultDescription = 'A demo blog powered by ngx-blogdown.';
 
   constructor() {
     const slug = this.route.snapshot.paramMap.get('slug')!;
-    this.blog.getPost(slug).then((post) => {
+    this.blog.getPost<DemoPost>(slug).then((post) => {
       this.post.set(post);
       if (post) {
         this.updateMetaTags(post);
@@ -34,7 +35,7 @@ export default class BlogPostComponent {
     this.destroyRef.onDestroy(() => this.resetMetaTags());
   }
 
-  private updateMetaTags(post: BlogPost) {
+  private updateMetaTags(post: BlogPost<DemoPost>) {
     const seo = this.blog.getSeoTags(post);
 
     this.title.setTitle(seo.title ? `${seo.title} | ngx-blogdown` : this.defaultTitle);

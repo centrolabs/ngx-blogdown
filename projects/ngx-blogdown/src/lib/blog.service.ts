@@ -2,7 +2,7 @@ import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
 import { marked } from 'marked';
-import { BlogPost, BlogPostMeta, SeoTags } from './blog.models';
+import { BlogPost, BlogPostBase, SeoTags } from './blog.models';
 import { NG_BLOG_CONFIG } from './blog.config';
 
 /**
@@ -15,19 +15,19 @@ export class BlogService {
   private http = inject(HttpClient);
   private config = inject(NG_BLOG_CONFIG);
 
-  private indexCache = signal<BlogPostMeta[] | null>(null);
+  private indexCache = signal<BlogPostBase[] | null>(null);
 
   /**
    * Fetches the blog post index. Results are cached in memory after the first call.
    *
    * @returns All blog post metadata from the configured index path.
    */
-  async getPosts(): Promise<BlogPostMeta[]> {
-    if (this.indexCache()) return this.indexCache()!;
+  async getPosts<T extends BlogPostBase = BlogPostBase>(): Promise<T[]> {
+    if (this.indexCache()) return this.indexCache()! as T[];
 
-    const posts = await firstValueFrom(this.http.get<BlogPostMeta[]>(this.config.indexPath));
+    const posts = await firstValueFrom(this.http.get<BlogPostBase[]>(this.config.indexPath));
     this.indexCache.set(posts);
-    return posts;
+    return posts as T[];
   }
 
   /**
@@ -37,8 +37,8 @@ export class BlogService {
    * @param slug - The URL-friendly post identifier to look up.
    * @returns The full blog post with rendered HTML, or `null` if not found.
    */
-  async getPost(slug: string): Promise<BlogPost | null> {
-    const posts = await this.getPosts();
+  async getPost<T extends BlogPostBase = BlogPostBase>(slug: string): Promise<BlogPost<T> | null> {
+    const posts = await this.getPosts<T>();
     const meta = posts.find((p) => p.slug === slug);
     if (!meta) return null;
 
@@ -63,13 +63,14 @@ export class BlogService {
    * @param postMeta - The post metadata to extract tags from.
    * @returns SEO-friendly tag values for use in `<meta>` elements.
    */
-  getSeoTags(postMeta: BlogPostMeta): SeoTags {
+  getSeoTags<T extends BlogPostBase>(postMeta: T): SeoTags {
+    const meta = postMeta as Record<string, unknown>;
     return {
       title: postMeta.title,
-      description: postMeta.tagline,
-      image: postMeta.cover,
-      date: postMeta.date,
-      author: postMeta.author ?? null,
+      description: (meta['tagline'] as string) ?? null,
+      image: (meta['cover'] as string) ?? null,
+      date: (meta['date'] as string) ?? null,
+      author: (meta['author'] as string) ?? null,
     };
   }
 }

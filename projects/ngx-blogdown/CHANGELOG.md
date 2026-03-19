@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.0] - 2026-03-19
+
+### Changed
+
+- Replaced `BlogPostMeta` with a minimal `BlogPostBase` interface (`slug`, `filename`, `title`). Extend it to define your own frontmatter fields.
+- `getPosts()` and `getPost()` now accept a generic type parameter for custom metadata shapes.
+- Moved `js-yaml` from `dependencies` to `peerDependencies`.
+
 ## [1.2.0] - 2026-03-17
 
 ### Fixed

@@ -3,12 +3,19 @@ import { provideZonelessChangeDetection } from '@angular/core';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { BlogService } from './blog.service';
-import { BlogPostMeta } from './blog.models';
+import { BlogPostBase } from './blog.models';
 import { provideNgBlogdown } from './blog.config';
+
+interface TestPost extends BlogPostBase {
+  date: string | null;
+  cover: string | null;
+  tagline: string | null;
+  author: string | null;
+}
 
 const TEST_CONFIG = { indexPath: '/assets/blog/index.json', postsDir: '/assets/blog/posts' };
 
-const MOCK_POSTS: BlogPostMeta[] = [
+const MOCK_POSTS: TestPost[] = [
   {
     slug: 'hello-world',
     filename: 'Hello World.md',
@@ -69,34 +76,34 @@ describe('BlogService', () => {
 
   describe('getPosts', () => {
     it('should fetch posts from the configured index path', async () => {
-      const promise = service.getPosts();
+      const promise = service.getPosts<TestPost>();
       httpTesting.expectOne(TEST_CONFIG.indexPath).flush(MOCK_POSTS);
       const posts = await promise;
       expect(posts).toEqual(MOCK_POSTS);
     });
 
     it('should cache posts after the first fetch', async () => {
-      const first = service.getPosts();
+      const first = service.getPosts<TestPost>();
       httpTesting.expectOne(TEST_CONFIG.indexPath).flush(MOCK_POSTS);
       await first;
 
-      const second = await service.getPosts();
+      const second = await service.getPosts<TestPost>();
       httpTesting.expectNone(TEST_CONFIG.indexPath);
       expect(second).toEqual(MOCK_POSTS);
     });
 
     it('should return the same data on subsequent calls', async () => {
-      const first = service.getPosts();
+      const first = service.getPosts<TestPost>();
       httpTesting.expectOne(TEST_CONFIG.indexPath).flush(MOCK_POSTS);
       const result1 = await first;
-      const result2 = await service.getPosts();
+      const result2 = await service.getPosts<TestPost>();
       expect(result1).toBe(result2);
     });
   });
 
   describe('getPost', () => {
     it('should fetch and parse a markdown post by slug', async () => {
-      const promise = service.getPost('hello-world');
+      const promise = service.getPost<TestPost>('hello-world');
 
       httpTesting.expectOne(TEST_CONFIG.indexPath).flush(MOCK_POSTS);
       await tick();
@@ -112,7 +119,7 @@ describe('BlogService', () => {
     });
 
     it('should return null for a non-existent slug', async () => {
-      const promise = service.getPost('non-existent');
+      const promise = service.getPost<TestPost>('non-existent');
       httpTesting.expectOne(TEST_CONFIG.indexPath).flush(MOCK_POSTS);
 
       const post = await promise;
@@ -120,7 +127,7 @@ describe('BlogService', () => {
     });
 
     it('should strip frontmatter and only render the body', async () => {
-      const promise = service.getPost('hello-world');
+      const promise = service.getPost<TestPost>('hello-world');
       httpTesting.expectOne(TEST_CONFIG.indexPath).flush(MOCK_POSTS);
       await tick();
 
@@ -133,7 +140,7 @@ describe('BlogService', () => {
 
     it('should handle markdown without frontmatter', async () => {
       const noFrontmatter = '# Just a heading\n\nSome paragraph.';
-      const promise = service.getPost('hello-world');
+      const promise = service.getPost<TestPost>('hello-world');
       httpTesting.expectOne(TEST_CONFIG.indexPath).flush(MOCK_POSTS);
       await tick();
 
@@ -145,7 +152,7 @@ describe('BlogService', () => {
     });
 
     it('should URL-encode the filename', async () => {
-      const promise = service.getPost('hello-world');
+      const promise = service.getPost<TestPost>('hello-world');
       httpTesting.expectOne(TEST_CONFIG.indexPath).flush(MOCK_POSTS);
       await tick();
 
@@ -157,14 +164,14 @@ describe('BlogService', () => {
     });
 
     it('should use cached index on subsequent getPost calls', async () => {
-      const first = service.getPost('hello-world');
+      const first = service.getPost<TestPost>('hello-world');
       httpTesting.expectOne(TEST_CONFIG.indexPath).flush(MOCK_POSTS);
       await tick();
 
       httpTesting.expectOne(FILE_URL).flush(MOCK_MARKDOWN);
       await first;
 
-      const second = service.getPost('second-post');
+      const second = service.getPost<TestPost>('second-post');
       await tick();
 
       httpTesting.expectNone(TEST_CONFIG.indexPath);
@@ -201,6 +208,18 @@ describe('BlogService', () => {
     it('should map cover to image', () => {
       const tags = service.getSeoTags(MOCK_POSTS[0]);
       expect(tags.image).toBe(MOCK_POSTS[0].cover);
+    });
+
+    it('should return nulls for a minimal BlogPostBase without optional fields', () => {
+      const minimal: BlogPostBase = { slug: 'minimal', filename: 'minimal.md', title: 'Minimal' };
+      const tags = service.getSeoTags(minimal);
+      expect(tags).toEqual({
+        title: 'Minimal',
+        description: null,
+        image: null,
+        date: null,
+        author: null,
+      });
     });
   });
 });
