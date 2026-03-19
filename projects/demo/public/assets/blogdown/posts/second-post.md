@@ -2,7 +2,9 @@ title: Second Post
 date: 2026-03-16
 tagline: Another post to verify listing works
 author: Demo Author
-cover:
+random: yes
+numeric: 12
+
 ---
 
 # Second Post

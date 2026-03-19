@@ -1,19 +1,21 @@
 /** Metadata for a blog post, as stored in the index JSON file. */
 export interface BlogPostMeta {
   /** URL-friendly identifier derived from the filename. */
-  slug: string;
+  slug: string | null;
   /** Original markdown filename including extension. */
-  filename: string;
+  filename: string | null;
   /** Display title of the post. */
-  title: string;
+  title: string | null;
   /** Publication date as an ISO date string (e.g. `"2026-01-15"`). */
-  date: string;
+  date: string | null;
   /** URL or path to the post's cover image. */
-  cover: string;
+  cover: string | null;
   /** Short summary or subtitle for the post. */
-  tagline: string;
+  tagline: string | null;
   /** Author name, or `null` if not specified. */
   author: string | null;
+  /** Tags of the blog */
+  tags: string[];
 }
 
 /** A full blog post including its rendered HTML content. */

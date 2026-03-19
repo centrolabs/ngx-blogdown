@@ -116,7 +116,7 @@ Content.`,
     assert.equal(index[0].title, 'my-post');
   });
 
-  it('should set author to null when not provided', () => {
+  it('should omit author when not provided', () => {
     writeFileSync(
       join(postsDir, 'no-author.md'),
       `title: No Author
@@ -127,19 +127,51 @@ Content.`,
     run(['--postsDir', postsDir, '--out', outFile]);
     const index = JSON.parse(readFileSync(outFile, 'utf-8'));
 
-    assert.equal(index[0].author, null);
+    assert.equal(index[0].author, undefined);
   });
 
-  it('should default missing fields to empty strings', () => {
+  it('should omit missing fields from output', () => {
     writeFileSync(join(postsDir, 'minimal.md'), '# Just content, no frontmatter');
 
     run(['--postsDir', postsDir, '--out', outFile]);
     const index = JSON.parse(readFileSync(outFile, 'utf-8'));
 
-    assert.equal(index[0].date, '');
-    assert.equal(index[0].cover, '');
-    assert.equal(index[0].tagline, '');
-    assert.equal(index[0].author, null);
+    assert.equal(index[0].date, undefined);
+    assert.equal(index[0].cover, undefined);
+    assert.equal(index[0].tagline, undefined);
+    assert.equal(index[0].author, undefined);
+  });
+
+  it('should parse array fields from YAML frontmatter', () => {
+    writeFileSync(
+      join(postsDir, 'tagged.md'),
+      `title: Tagged Post
+tags:
+  - angular
+  - typescript
+---
+Content.`,
+    );
+
+    run(['--postsDir', postsDir, '--out', outFile]);
+    const index = JSON.parse(readFileSync(outFile, 'utf-8'));
+
+    assert.deepEqual(index[0].tags, ['angular', 'typescript']);
+  });
+
+  it('should parse inline array fields from YAML frontmatter', () => {
+    writeFileSync(
+      join(postsDir, 'inline-tags.md'),
+      `title: Inline Tags
+tags: [angular, typescript]
+---
+Content.`,
+    );
+
+    run(['--postsDir', postsDir, '--out', outFile]);
+    const index = JSON.parse(readFileSync(outFile, 'utf-8'));
+
+    assert.deepEqual(index[0].tags, ['angular', 'typescript']);
   });
 
   it('should generate slug from filename (lowercase, spaces to hyphens)', () => {
@@ -189,11 +221,11 @@ Content.`,
     assert.ok(stdout.includes('5 post(s)'));
   });
 
-  it('should handle frontmatter with colons in values', () => {
+  it('should handle frontmatter with colons in quoted values', () => {
     writeFileSync(
       join(postsDir, 'colon.md'),
-      `title: My Post: A Subtitle
-tagline: This is it: the one
+      `title: "My Post: A Subtitle"
+tagline: "This is it: the one"
 ---
 Content.`,
     );
