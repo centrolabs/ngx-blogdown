@@ -22,6 +22,9 @@ bootstrapApplication(AppComponent, {
     provideNgBlogdown({
       indexPath: '/blog/index.json',
       postsDir: '/blog/posts',
+      // Optional: prefix relative image paths in post markdown.
+      // `![alt](foo.png)` → `<img src="/blog/images/foo.png">`
+      imagesDir: '/blog/images',
     }),
   ],
 });

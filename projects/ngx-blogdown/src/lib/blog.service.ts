@@ -1,9 +1,11 @@
 import { inject, Injectable, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { marked } from 'marked';
+import { Marked, Tokens } from 'marked';
 import { BlogPost, BlogPostBase, SeoTags } from './blog.models';
 import { NG_BLOG_CONFIG } from './blog.config';
+
+const ABSOLUTE_URL_RE = /^(?:[a-z][a-z0-9+.-]*:|\/\/|\/|#|data:)/i;
 
 /**
  * Core service for fetching and rendering markdown blog posts.
@@ -16,6 +18,7 @@ export class BlogService {
   private config = inject(NG_BLOG_CONFIG);
 
   private indexCache = signal<BlogPostBase[] | null>(null);
+  private markdown = this.buildMarkdownParser();
 
   /**
    * Fetches the blog post index. Results are cached in memory after the first call.
@@ -52,7 +55,7 @@ export class BlogService {
     const headerEnd = separatorMatch ? separatorMatch.index! : -1;
     const body = headerEnd !== -1 ? raw.slice(headerEnd + separatorMatch![0].length).trim() : raw;
 
-    const htmlContent = await marked(body);
+    const htmlContent = await this.markdown.parse(body);
 
     return { ...meta, htmlContent };
   }
@@ -72,5 +75,19 @@ export class BlogService {
       date: (meta['date'] as string) ?? null,
       author: (meta['author'] as string) ?? null,
     };
+  }
+
+  private buildMarkdownParser(): Marked {
+    const imagesDir = this.config.imagesDir?.replace(/\/+$/, '');
+    if (!imagesDir) return new Marked();
+
+    return new Marked({
+      walkTokens: (token) => {
+        if (token.type !== 'image') return;
+        const image = token as Tokens.Image;
+        if (!image.href || ABSOLUTE_URL_RE.test(image.href)) return;
+        image.href = `${imagesDir}/${image.href.replace(/^\.\//, '')}`;
+      },
+    });
   }
 }

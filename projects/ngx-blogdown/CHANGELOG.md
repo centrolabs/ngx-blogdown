@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.4.0] - 2026-04-20
+
+### Added
+
+- Optional `imagesDir` config. When set, relative image references in post markdown (e.g. `![alt](foo.png)` or `![alt](./foo.png)`) are rewritten to `<imagesDir>/foo.png` at render time. Absolute URLs, protocol-relative URLs, rooted paths, and `data:` URIs pass through unchanged.
+
 ## [1.3.0] - 2026-03-19
 
 ### Changed

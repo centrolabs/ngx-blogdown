@@ -183,6 +183,82 @@ describe('BlogService', () => {
     });
   });
 
+  describe('image path rewriting', () => {
+    const IMAGES_DIR = '/assets/blog/images';
+
+    function setupWithImagesDir(imagesDir: string | null) {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
+          provideZonelessChangeDetection(),
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          provideNgBlogdown(imagesDir === null ? TEST_CONFIG : { ...TEST_CONFIG, imagesDir }),
+        ],
+      });
+      service = TestBed.inject(BlogService);
+      httpTesting = TestBed.inject(HttpTestingController);
+    }
+
+    async function render(markdownBody: string): Promise<string> {
+      const md = `title: Hello World\n---\n${markdownBody}`;
+      const promise = service.getPost<TestPost>('hello-world');
+      httpTesting.expectOne(TEST_CONFIG.indexPath).flush(MOCK_POSTS);
+      await tick();
+      httpTesting.expectOne(FILE_URL).flush(md);
+      const post = await promise;
+      return post!.htmlContent;
+    }
+
+    it('prefixes bare relative image filenames with imagesDir', async () => {
+      setupWithImagesDir(IMAGES_DIR);
+      const html = await render('![alt](foo.png)');
+      expect(html).toContain(`src="${IMAGES_DIR}/foo.png"`);
+    });
+
+    it('strips a leading ./ before prefixing', async () => {
+      setupWithImagesDir(IMAGES_DIR);
+      const html = await render('![alt](./foo.png)');
+      expect(html).toContain(`src="${IMAGES_DIR}/foo.png"`);
+    });
+
+    it('strips a trailing slash on imagesDir', async () => {
+      setupWithImagesDir(IMAGES_DIR + '/');
+      const html = await render('![alt](foo.png)');
+      expect(html).toContain(`src="${IMAGES_DIR}/foo.png"`);
+    });
+
+    it('leaves absolute http(s) URLs unchanged', async () => {
+      setupWithImagesDir(IMAGES_DIR);
+      const html = await render('![alt](https://cdn.example.com/foo.png)');
+      expect(html).toContain('src="https://cdn.example.com/foo.png"');
+    });
+
+    it('leaves protocol-relative URLs unchanged', async () => {
+      setupWithImagesDir(IMAGES_DIR);
+      const html = await render('![alt](//cdn.example.com/foo.png)');
+      expect(html).toContain('src="//cdn.example.com/foo.png"');
+    });
+
+    it('leaves rooted paths unchanged', async () => {
+      setupWithImagesDir(IMAGES_DIR);
+      const html = await render('![alt](/already/rooted.png)');
+      expect(html).toContain('src="/already/rooted.png"');
+    });
+
+    it('leaves data URIs unchanged', async () => {
+      setupWithImagesDir(IMAGES_DIR);
+      const html = await render('![alt](data:image/png;base64,AAA)');
+      expect(html).toContain('src="data:image/png;base64,AAA"');
+    });
+
+    it('does not rewrite anything when imagesDir is not configured', async () => {
+      setupWithImagesDir(null);
+      const html = await render('![alt](foo.png)');
+      expect(html).toContain('src="foo.png"');
+    });
+  });
+
   describe('getSeoTags', () => {
     it('should map post meta to SEO tags', () => {
       const tags = service.getSeoTags(MOCK_POSTS[0]);

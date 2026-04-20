@@ -20,6 +20,12 @@ export interface NgBlogConfig {
   indexPath: string;
   /** Directory path where markdown post files are served from. */
   postsDir: string;
+  /**
+   * Optional base URL prepended to relative image references inside post markdown
+   * (e.g. `![alt](foo.png)` → `<imagesDir>/foo.png`). Absolute URLs (`http://`,
+   * `https://`, `//`, `data:`) and rooted paths (`/foo.png`) are left unchanged.
+   */
+  imagesDir?: string;
 }
 
 /** SEO meta tag values extracted from a blog post. */
