@@ -1,6 +1,6 @@
 {
   "name": "@centrolabs/ngx-blogdown",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "description": "A lightweight Angular library for building markdown-powered blogs. You handle the layout, we handle the pipeline.",
   "peerDependencies": {
     "@angular/common": ">=20.3.0",

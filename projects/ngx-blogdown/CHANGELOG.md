@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.4.1] - 2026-04-20
+
+### Fixed
+
+- Set the executable bit on the `ngx-blogdown-index` CLI source so fresh `npm install` pulls a runnable binary (previously failed with `Permission denied` on some systems).
+
 ## [1.4.0] - 2026-04-20
 
 ### Added
