@@ -112,16 +112,53 @@ const seo = this.blogService.getSeoTags(meta);
 // { title, description, image, date, author }
 ```
 
+### Multilingual posts
+
+Drop a `<base>.<lang>.md` next to a post to publish a localized version:
+
+```
+posts/
+  My First Post.md       # base (default language)
+  My First Post.de.md    # German variant
+  My First Post.fr.md    # French variant
+```
+
+The CLI groups each variant under `translations[lang]` on its base entry, so
+the index keeps a single row per post. Variants only need the frontmatter
+fields that actually differ — any field they omit falls back to the base.
+
+Wire the active language by passing a `lang` getter (and use the factory form
+of `provideNgBlogdown` if it depends on another injectable):
+
+```ts
+provideNgBlogdown(() => {
+  const i18n = inject(TranslationService);
+  return {
+    indexPath: '/blog/index.json',
+    postsDir: '/blog/posts',
+    lang: () => i18n.lang(),
+  };
+});
+```
+
+`getPosts()` and `getPost()` now merge the matching translation onto the base
+post automatically. Region codes like `pt-BR` are supported. Slugs always
+come from the base filename, so URLs stay stable across languages.
+
 ## API
 
-### `provideNgBlogdown(config)`
+### `provideNgBlogdown(config | factory)`
 
 Registers the library providers. Call this in your application bootstrap.
+Pass a static config object, or a factory that runs in an injection context
+when the config depends on other injectables.
 
-| Parameter          | Type     | Description                               |
-| ------------------ | -------- | ----------------------------------------- |
-| `config.indexPath` | `string` | Path to the JSON index file               |
-| `config.postsDir`  | `string` | Directory where markdown files are served |
+| Field                 | Type                  | Description                                                              |
+| --------------------- | --------------------- | ------------------------------------------------------------------------ |
+| `config.indexPath`    | `string`              | Path to the JSON index file                                              |
+| `config.postsDir`     | `string`              | Directory where markdown files are served                                |
+| `config.imagesDir?`   | `string`              | Optional prefix for relative image paths inside post markdown            |
+| `config.lang?`        | `() => string \| null` | Optional active language; selects the matching `translations[lang]` entry |
 
 ### `BlogService`
 

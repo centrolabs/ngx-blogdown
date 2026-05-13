@@ -21,50 +21,45 @@ export class BlogService {
   private markdown = this.buildMarkdownParser();
 
   /**
-   * Fetches the blog post index. Results are cached in memory after the first call.
-   *
-   * @returns All blog post metadata from the configured index path.
+   * Fetches the blog post index, with localized fields merged in when the
+   * configured `lang()` matches a post's `translations` entry. The raw index
+   * is cached after the first call; localization is re-applied on every call.
    */
   async getPosts<T extends BlogPostBase = BlogPostBase>(): Promise<T[]> {
-    if (this.indexCache()) return this.indexCache()! as T[];
-
-    const posts = await firstValueFrom(this.http.get<BlogPostBase[]>(this.config.indexPath));
-    this.indexCache.set(posts);
-    return posts as T[];
+    const posts = await this.fetchIndex<T>();
+    return posts.map((post) => this.localize(post));
   }
 
   /**
    * Fetches a single blog post by its slug, parses its markdown body into HTML,
-   * and strips the YAML frontmatter.
+   * and strips the YAML frontmatter. When the configured `lang()` matches a
+   * translation, the variant's filename and frontmatter fields take precedence
+   * over the base.
    *
-   * @param slug - The URL-friendly post identifier to look up.
    * @returns The full blog post with rendered HTML, or `null` if not found.
    */
   async getPost<T extends BlogPostBase = BlogPostBase>(slug: string): Promise<BlogPost<T> | null> {
-    const posts = await this.getPosts<T>();
-    const meta = posts.find((p) => p.slug === slug);
-    if (!meta) return null;
+    const posts = await this.fetchIndex<T>();
+    const entry = posts.find((p) => p.slug === slug);
+    if (!entry) return null;
 
+    const localized = this.localize(entry);
     const raw = await firstValueFrom(
-      this.http.get(`${this.config.postsDir}/${encodeURIComponent(meta.filename)}`, {
+      this.http.get(`${this.config.postsDir}/${encodeURIComponent(localized.filename)}`, {
         responseType: 'text',
       }),
     );
 
-    const separatorMatch = raw.match(/^-{3,}$/m);
-    const headerEnd = separatorMatch ? separatorMatch.index! : -1;
-    const body = headerEnd !== -1 ? raw.slice(headerEnd + separatorMatch![0].length).trim() : raw;
-
+    const separator = raw.match(/^-{3,}$/m);
+    const body = separator ? raw.slice(separator.index! + separator[0].length).trim() : raw;
     const htmlContent = await this.markdown.parse(body);
 
-    return { ...meta, htmlContent };
+    return { ...localized, htmlContent };
   }
 
   /**
-   * Derives SEO meta tags from a post's metadata.
-   *
-   * @param postMeta - The post metadata to extract tags from.
-   * @returns SEO-friendly tag values for use in `<meta>` elements.
+   * Derives SEO meta tags from a post's metadata. Pass a post returned by
+   * {@link getPosts} to get already-localized tags.
    */
   getSeoTags<T extends BlogPostBase>(postMeta: T): SeoTags {
     const meta = postMeta as Record<string, unknown>;
@@ -75,6 +70,25 @@ export class BlogService {
       date: (meta['date'] as string) ?? null,
       author: (meta['author'] as string) ?? null,
     };
+  }
+
+  private async fetchIndex<T extends BlogPostBase>(): Promise<T[]> {
+    const cached = this.indexCache();
+    if (cached) return cached as T[];
+
+    const posts = await firstValueFrom(this.http.get<BlogPostBase[]>(this.config.indexPath));
+    this.indexCache.set(posts);
+    return posts as T[];
+  }
+
+  private localize<T extends BlogPostBase>(post: T): T {
+    const lang = this.config.lang?.();
+    if (!lang) return post;
+
+    const variant = post.translations?.[lang];
+    if (!variant) return post;
+
+    return { ...post, ...(variant as Partial<T>) };
   }
 
   private buildMarkdownParser(): Marked {

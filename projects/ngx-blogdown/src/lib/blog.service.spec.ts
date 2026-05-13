@@ -298,4 +298,146 @@ describe('BlogService', () => {
       });
     });
   });
+
+  describe('localization', () => {
+    const LOCALIZED_POSTS: TestPost[] = [
+      {
+        slug: 'hello-world',
+        filename: 'Hello World.md',
+        title: 'Hello World',
+        date: '2026-01-15',
+        cover: '/covers/hello.png',
+        tagline: 'A first post',
+        author: 'Alice',
+        translations: {
+          de: {
+            filename: 'Hello World.de.md',
+            title: 'Hallo Welt',
+            tagline: 'Ein erster Beitrag',
+          },
+        },
+      } as TestPost,
+      {
+        slug: 'second-post',
+        filename: 'second-post.md',
+        title: 'Second Post',
+        date: '2026-02-10',
+        cover: '/covers/second.png',
+        tagline: 'Another post',
+        author: null,
+      },
+    ];
+
+    function setupWithLang(lang: () => string | null | undefined) {
+      TestBed.resetTestingModule();
+      TestBed.configureTestingModule({
+        providers: [
+          provideZonelessChangeDetection(),
+          provideHttpClient(),
+          provideHttpClientTesting(),
+          provideNgBlogdown({ ...TEST_CONFIG, lang }),
+        ],
+      });
+      service = TestBed.inject(BlogService);
+      httpTesting = TestBed.inject(HttpTestingController);
+    }
+
+    it('merges the translation onto each post returned by getPosts', async () => {
+      setupWithLang(() => 'de');
+      const promise = service.getPosts<TestPost>();
+      httpTesting.expectOne(TEST_CONFIG.indexPath).flush(LOCALIZED_POSTS);
+      const posts = await promise;
+
+      expect(posts[0].title).toBe('Hallo Welt');
+      expect(posts[0].tagline).toBe('Ein erster Beitrag');
+      expect(posts[0].filename).toBe('Hello World.de.md');
+      // Untranslated fields fall back to the base.
+      expect(posts[0].cover).toBe('/covers/hello.png');
+      expect(posts[0].date).toBe('2026-01-15');
+      // The post's translations map is preserved for downstream consumers.
+      expect(posts[0].translations?.['de']).toBeTruthy();
+    });
+
+    it('leaves posts without a matching translation untouched', async () => {
+      setupWithLang(() => 'de');
+      const promise = service.getPosts<TestPost>();
+      httpTesting.expectOne(TEST_CONFIG.indexPath).flush(LOCALIZED_POSTS);
+      const posts = await promise;
+
+      expect(posts[1].title).toBe('Second Post');
+      expect(posts[1].filename).toBe('second-post.md');
+    });
+
+    it('returns the base post when no lang getter is configured', async () => {
+      // Default TEST_CONFIG has no `lang` set; use the existing setup.
+      const promise = service.getPosts<TestPost>();
+      httpTesting.expectOne(TEST_CONFIG.indexPath).flush(LOCALIZED_POSTS);
+      const posts = await promise;
+
+      expect(posts[0].title).toBe('Hello World');
+      expect(posts[0].filename).toBe('Hello World.md');
+    });
+
+    it('returns the base post when lang() yields a falsy value', async () => {
+      setupWithLang(() => null);
+      const promise = service.getPosts<TestPost>();
+      httpTesting.expectOne(TEST_CONFIG.indexPath).flush(LOCALIZED_POSTS);
+      const posts = await promise;
+
+      expect(posts[0].title).toBe('Hello World');
+    });
+
+    it('returns the base post when lang() has no matching translation', async () => {
+      setupWithLang(() => 'fr');
+      const promise = service.getPosts<TestPost>();
+      httpTesting.expectOne(TEST_CONFIG.indexPath).flush(LOCALIZED_POSTS);
+      const posts = await promise;
+
+      expect(posts[0].title).toBe('Hello World');
+      expect(posts[0].filename).toBe('Hello World.md');
+    });
+
+    it('re-evaluates lang() on every getPosts call', async () => {
+      let current: string | null = 'de';
+      setupWithLang(() => current);
+
+      const first = service.getPosts<TestPost>();
+      httpTesting.expectOne(TEST_CONFIG.indexPath).flush(LOCALIZED_POSTS);
+      expect((await first)[0].title).toBe('Hallo Welt');
+
+      current = null;
+      // Index cache is hit; no further HTTP calls.
+      const second = await service.getPosts<TestPost>();
+      httpTesting.expectNone(TEST_CONFIG.indexPath);
+      expect(second[0].title).toBe('Hello World');
+    });
+
+    it('fetches the variant filename in getPost when a translation matches', async () => {
+      setupWithLang(() => 'de');
+      const promise = service.getPost<TestPost>('hello-world');
+      httpTesting.expectOne(TEST_CONFIG.indexPath).flush(LOCALIZED_POSTS);
+      await tick();
+
+      const variantUrl = `${TEST_CONFIG.postsDir}/${encodeURIComponent('Hello World.de.md')}`;
+      httpTesting.expectOne(variantUrl).flush('# Hallo\n\nText.');
+
+      const post = await promise;
+      expect(post!.title).toBe('Hallo Welt');
+      expect(post!.filename).toBe('Hello World.de.md');
+      expect(post!.htmlContent).toContain('<h1>Hallo</h1>');
+    });
+
+    it('falls back to the base filename in getPost when no translation matches', async () => {
+      setupWithLang(() => 'fr');
+      const promise = service.getPost<TestPost>('hello-world');
+      httpTesting.expectOne(TEST_CONFIG.indexPath).flush(LOCALIZED_POSTS);
+      await tick();
+
+      httpTesting.expectOne(FILE_URL).flush(MOCK_MARKDOWN);
+
+      const post = await promise;
+      expect(post!.title).toBe('Hello World');
+      expect(post!.filename).toBe('Hello World.md');
+    });
+  });
 });
