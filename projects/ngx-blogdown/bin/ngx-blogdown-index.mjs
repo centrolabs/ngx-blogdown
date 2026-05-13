@@ -4,7 +4,9 @@ import { readdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import yaml from 'js-yaml';
 
-const VARIANT_RE = /^(.+?)\.([a-z]{2,3}(?:-[a-z]{2,4})?)\.md$/i;
+// Matches `<base>.<lang>.md` where lang is a 2-3 letter primary subtag with an
+// optional region (`de`, `en`, `pt-BR`, `zh-CN`). A pragmatic BCP-47 subset.
+const VARIANT_RE = /^(?<base>.+?)\.(?<lang>[a-z]{2,3}(?:-[a-z]{2,4})?)\.md$/i;
 
 const flags = { '--postsDir': null, '--out': null };
 process.argv.forEach((val, idx, args) => {
@@ -40,13 +42,15 @@ const baseFilenames = [];
 const variantFiles = [];
 
 for (const filename of files) {
-  const match = filename.match(VARIANT_RE);
-  if (match && fileSet.has(`${match[1]}.md`)) {
-    variantFiles.push({ baseFilename: `${match[1]}.md`, lang: match[2].toLowerCase(), filename });
+  const groups = filename.match(VARIANT_RE)?.groups;
+  const baseFilename = groups && `${groups.base}.md`;
+
+  if (groups && fileSet.has(baseFilename)) {
+    variantFiles.push({ baseFilename, lang: groups.lang.toLowerCase(), filename });
   } else {
-    if (match) {
+    if (groups) {
       console.warn(
-        `Warning: '${filename}' looks like a language variant but no base '${match[1]}.md' was found — treating as a standalone post.`,
+        `Warning: '${filename}' looks like a language variant but no base '${baseFilename}' was found — treating as a standalone post.`,
       );
     }
     baseFilenames.push(filename);
