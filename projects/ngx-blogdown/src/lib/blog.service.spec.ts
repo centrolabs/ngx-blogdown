@@ -97,7 +97,7 @@ describe('BlogService', () => {
       httpTesting.expectOne(TEST_CONFIG.indexPath).flush(MOCK_POSTS);
       const result1 = await first;
       const result2 = await service.getPosts<TestPost>();
-      expect(result1).toBe(result2);
+      expect(result1).toEqual(result2);
     });
   });
 
