@@ -28,11 +28,18 @@ const outputFile = flags['--out'];
 
 const files = readdirSync(postsDir).filter((f) => f.endsWith('.md'));
 
+// ~200 wpm is the standard adult silent-reading rate; clamped to 1 so any post still surfaces a printable estimate.
+function computeReadTime(body) {
+  const wordCount = body.trim().split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(wordCount / 200));
+}
+
 const posts = files.map((filename) => {
   const raw = readFileSync(join(postsDir, filename), 'utf-8');
   const separatorMatch = raw.match(/^-{3,}$/m);
   const headerEnd = separatorMatch ? separatorMatch.index : -1;
   const header = headerEnd !== -1 ? raw.slice(0, headerEnd) : '';
+  const body = headerEnd !== -1 ? raw.slice(headerEnd + separatorMatch[0].length) : raw;
 
   const meta = header.trim() ? yaml.load(header, { schema: yaml.CORE_SCHEMA }) : {};
   const slug = filename.replace(/\.md$/, '').replace(/\s+/g, '-').toLowerCase();
@@ -42,6 +49,7 @@ const posts = files.map((filename) => {
     filename,
     ...meta,
     title: meta.title || filename.replace(/\.md$/, ''),
+    readTime: meta.readTime ?? computeReadTime(body),
   };
 });
 
