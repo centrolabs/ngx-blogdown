@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.5.0] - 2026-05-16
+
+### Added
+
+- `author?: string | null` and `readTime?: number` are now first-class optional fields on `BlogPostBase`. Consumers can rely on them without redeclaring them in their own post types.
+- The `ngx-blogdown-index` CLI auto-computes `readTime` (whole minutes) from the post body at ~200 wpm, clamped to a 1-minute minimum. Frontmatter `readTime:` still takes precedence when explicitly set.
+
 ## [1.4.1] - 2026-04-20
 
 ### Fixed
