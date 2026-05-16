@@ -8,21 +8,31 @@ export const NG_BLOG_CONFIG = new InjectionToken<NgBlogConfig>('NG_BLOG_CONFIG')
 /**
  * Provides the ngx-blogdown library with the given configuration.
  *
- * Register the returned providers in your application's bootstrap or route config.
+ * Accepts either a static config object or a factory function that runs in an
+ * injection context — use the factory form when the config depends on other
+ * injectables (e.g. a translation service supplying the active `lang`).
  *
- * @param config - Paths to the blog index file and posts directory.
- * @returns An array of providers including {@link BlogService} and the config token.
- *
- * @example
+ * @example Static config
  * ```ts
- * bootstrapApplication(AppComponent, {
- *   providers: [
- *     provideHttpClient(),
- *     provideNgBlogdown({ indexPath: '/blog/index.json', postsDir: '/blog/posts' }),
- *   ],
+ * provideNgBlogdown({ indexPath: '/blog/index.json', postsDir: '/blog/posts' })
+ * ```
+ *
+ * @example Factory with injected dependencies
+ * ```ts
+ * provideNgBlogdown(() => {
+ *   const i18n = inject(TranslationService);
+ *   return {
+ *     indexPath: '/blog/index.json',
+ *     postsDir: '/blog/posts',
+ *     lang: () => i18n.lang(),
+ *   };
  * });
  * ```
  */
-export function provideNgBlogdown(config: NgBlogConfig): Provider[] {
-  return [{ provide: NG_BLOG_CONFIG, useValue: config }, BlogService];
+export function provideNgBlogdown(config: NgBlogConfig | (() => NgBlogConfig)): Provider[] {
+  const configProvider: Provider =
+    typeof config === 'function'
+      ? { provide: NG_BLOG_CONFIG, useFactory: config }
+      : { provide: NG_BLOG_CONFIG, useValue: config };
+  return [configProvider, BlogService];
 }

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtempSync, writeFileSync, readFileSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { execFileSync } from 'child_process';
+import { execFileSync, spawnSync } from 'child_process';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
@@ -13,15 +13,19 @@ const CLI_PATH = join(__dirname, 'ngx-blogdown-index.mjs');
 
 function run(args, { expectFail = false } = {}) {
   try {
-    const stdout = execFileSync('node', [CLI_PATH, ...args], {
+    const result = execFileSync('node', [CLI_PATH, ...args], {
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],
     });
-    return { stdout, exitCode: 0 };
+    return { stdout: result, stderr: '', exitCode: 0 };
   } catch (err) {
     if (!expectFail) throw err;
-    return { stderr: err.stderr, exitCode: err.status };
+    return { stdout: err.stdout ?? '', stderr: err.stderr, exitCode: err.status };
   }
+}
+
+function runCapturingStderr(args) {
+  return spawnSync('node', [CLI_PATH, ...args], { encoding: 'utf-8' });
 }
 
 describe('ngx-blogdown-index CLI', () => {
@@ -263,5 +267,125 @@ Content.`,
 
     assert.equal(index[0].title, 'My Post: A Subtitle');
     assert.equal(index[0].tagline, 'This is it: the one');
+  });
+
+  describe('language variants', () => {
+    it('should group <base>.<lang>.md as a translation under the base entry', () => {
+      writeFileSync(
+        join(postsDir, 'Self Host 101.md'),
+        `title: Self Host 101
+tagline: How we run our stack
+date: 2026-04-27
+cover: cover.png
+---
+Body.`,
+      );
+      writeFileSync(
+        join(postsDir, 'Self Host 101.de.md'),
+        `title: Self Host 101 (DE)
+tagline: Wie wir unseren Stack betreiben
+---
+Inhalt.`,
+      );
+
+      run(['--postsDir', postsDir, '--out', outFile]);
+      const index = JSON.parse(readFileSync(outFile, 'utf-8'));
+
+      assert.equal(index.length, 1);
+      assert.equal(index[0].slug, 'self-host-101');
+      assert.equal(index[0].filename, 'Self Host 101.md');
+      assert.equal(index[0].title, 'Self Host 101');
+      assert.deepEqual(index[0].translations, {
+        de: {
+          filename: 'Self Host 101.de.md',
+          title: 'Self Host 101 (DE)',
+          tagline: 'Wie wir unseren Stack betreiben',
+          readTime: 1,
+        },
+      });
+    });
+
+    it('should support multiple language variants for the same base', () => {
+      writeFileSync(join(postsDir, 'hello.md'), 'title: Hello\n---\nBody.');
+      writeFileSync(join(postsDir, 'hello.de.md'), 'title: Hallo\n---\nKörper.');
+      writeFileSync(join(postsDir, 'hello.fr.md'), 'title: Bonjour\n---\nCorps.');
+
+      run(['--postsDir', postsDir, '--out', outFile]);
+      const index = JSON.parse(readFileSync(outFile, 'utf-8'));
+
+      assert.equal(index.length, 1);
+      assert.deepEqual(Object.keys(index[0].translations).sort(), ['de', 'fr']);
+      assert.equal(index[0].translations.de.title, 'Hallo');
+      assert.equal(index[0].translations.fr.title, 'Bonjour');
+    });
+
+    it('should normalize the language code to lowercase', () => {
+      writeFileSync(join(postsDir, 'hello.md'), 'title: Hello\n---\nBody.');
+      writeFileSync(join(postsDir, 'hello.DE.md'), 'title: Hallo\n---\nKörper.');
+
+      run(['--postsDir', postsDir, '--out', outFile]);
+      const index = JSON.parse(readFileSync(outFile, 'utf-8'));
+
+      assert.deepEqual(Object.keys(index[0].translations), ['de']);
+    });
+
+    it('should support region-qualified codes like pt-BR', () => {
+      writeFileSync(join(postsDir, 'hello.md'), 'title: Hello\n---\nBody.');
+      writeFileSync(join(postsDir, 'hello.pt-BR.md'), 'title: Olá\n---\nCorpo.');
+
+      run(['--postsDir', postsDir, '--out', outFile]);
+      const index = JSON.parse(readFileSync(outFile, 'utf-8'));
+
+      assert.equal(index[0].translations['pt-br'].title, 'Olá');
+    });
+
+    it('should treat a variant with no base file as a standalone post and warn', () => {
+      writeFileSync(join(postsDir, 'orphan.de.md'), 'title: Waise\n---\nKörper.');
+
+      const result = runCapturingStderr(['--postsDir', postsDir, '--out', outFile]);
+      assert.equal(result.status, 0);
+      assert.match(result.stderr, /orphan\.de\.md/);
+      assert.match(result.stderr, /no base/i);
+
+      const index = JSON.parse(readFileSync(outFile, 'utf-8'));
+      assert.equal(index.length, 1);
+      assert.equal(index[0].translations, undefined);
+      assert.equal(index[0].slug, 'orphan.de');
+    });
+
+    it('should not add a translations field when there are no variants', () => {
+      writeFileSync(join(postsDir, 'solo.md'), 'title: Solo\n---\nBody.');
+
+      run(['--postsDir', postsDir, '--out', outFile]);
+      const index = JSON.parse(readFileSync(outFile, 'utf-8'));
+
+      assert.equal(index.length, 1);
+      assert.equal(index[0].translations, undefined);
+    });
+
+    it('should preserve arbitrary frontmatter fields in the translation entry', () => {
+      writeFileSync(join(postsDir, 'p.md'), 'title: P\n---\nBody.');
+      writeFileSync(
+        join(postsDir, 'p.de.md'),
+        `title: P (DE)
+tagline: Tag
+cover: alt.png
+tags: [a, b]
+---
+Inhalt.`,
+      );
+
+      run(['--postsDir', postsDir, '--out', outFile]);
+      const index = JSON.parse(readFileSync(outFile, 'utf-8'));
+
+      assert.deepEqual(index[0].translations.de, {
+        filename: 'p.de.md',
+        title: 'P (DE)',
+        tagline: 'Tag',
+        cover: 'alt.png',
+        tags: ['a', 'b'],
+        readTime: 1,
+      });
+    });
   });
 });

@@ -1,5 +1,18 @@
 # Changelog
 
+## [2.0.0] - 2026-05-13
+
+### Breaking
+
+- `ngx-blogdown-index` CLI no longer emits one top-level index entry per `.md` file. Sibling files matching `<base>.<lang>.md` are now grouped under their base post as `translations[lang]`. Consumers that read variant rows directly from the index must read them from the new `translations` map instead. Slugs always derive from the base filename, so post URLs stay stable across languages.
+
+### Added
+
+- Multilingual post support. Drop `<base>.<lang>.md` next to a post for a localized variant; only the frontmatter fields that differ from the base need to be present. Region-qualified codes like `pt-BR` are recognized.
+- `NgBlogConfig.lang?: () => string | null | undefined` — optional active-language getter. When set and a post has a matching `translations[lang]` entry, `getPosts()` and `getPost()` merge the variant's filename and frontmatter onto the base. Falsy return values fall back to the base post.
+- `provideNgBlogdown` now accepts a factory in addition to a static config, so the config can depend on other injectables (e.g. a translation service supplying `lang`).
+- `BlogPostTranslation` interface, exported from the public API.
+
 ## [1.5.0] - 2026-05-16
 
 ### Added

@@ -56,5 +56,19 @@ describe('blog.config', () => {
       expect(config.indexPath).toBe('/custom/index.json');
       expect(config.postsDir).toBe('/custom/posts');
     });
+
+    it('should accept a factory that runs in an injection context', () => {
+      const factory = () => ({ indexPath: '/factory/index.json', postsDir: '/factory/posts' });
+      const providers = provideNgBlogdown(factory);
+      expect(providers.length).toBe(2);
+
+      TestBed.configureTestingModule({
+        providers: [provideZonelessChangeDetection(), provideHttpClient(), providers],
+      });
+
+      const config = TestBed.inject(NG_BLOG_CONFIG);
+      expect(config.indexPath).toBe('/factory/index.json');
+      expect(config.postsDir).toBe('/factory/posts');
+    });
   });
 });
