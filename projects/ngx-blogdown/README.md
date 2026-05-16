@@ -40,6 +40,7 @@ date: 2026-01-15
 cover: /images/first-post.png
 tagline: A short description of this post
 author: Jane Doe
+# readTime: 5   # optional — auto-computed from word count when omitted
 
 ---
 
@@ -179,7 +180,17 @@ ngx-blogdown-index --postsDir <path> --out <file>
 | `--postsDir` | Directory containing `.md` files         |
 | `--out`      | Output path for the generated JSON index |
 
-The generated index is sorted by date (newest first). Slugs are derived from filenames (lowercased, spaces replaced with hyphens).
+The generated index is sorted by date (newest first). Slugs are derived from filenames (lowercased, spaces replaced with hyphens). Each post's `readTime` (in minutes) is auto-computed from its body word count at ~200 wpm unless overridden in frontmatter.
+
+### Built-in fields on `BlogPostBase`
+
+| Field      | Type     | Source                                                                              |
+| ---------- | -------- | ----------------------------------------------------------------------------------- |
+| `slug`     | `string` | Derived from filename                                                               |
+| `filename` | `string` | Markdown filename                                                                   |
+| `title`    | `string` | Frontmatter `title:` (falls back to filename)                                       |
+| `author`   | `string` | Frontmatter `author:` (optional)                                                    |
+| `readTime` | `number` | Frontmatter `readTime:` or auto-computed minutes from body word count (minimum `1`) |
 
 ## Peer Dependencies
 

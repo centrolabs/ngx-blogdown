@@ -27,11 +27,19 @@ const outputFile = flags['--out'];
 const files = readdirSync(postsDir).filter((f) => f.endsWith('.md'));
 const fileSet = new Set(files);
 
-function parseFrontmatter(filename) {
+function parsePost(filename) {
   const raw = readFileSync(join(postsDir, filename), 'utf-8');
   const separator = raw.match(/^-{3,}$/m);
   const header = separator ? raw.slice(0, separator.index) : '';
-  return header.trim() ? yaml.load(header, { schema: yaml.CORE_SCHEMA }) : {};
+  const body = separator ? raw.slice(separator.index + separator[0].length) : raw;
+  const meta = header.trim() ? yaml.load(header, { schema: yaml.CORE_SCHEMA }) : {};
+  return { meta, body };
+}
+
+// ~200 wpm is the standard adult silent-reading rate; clamped to 1 so any post still surfaces a printable estimate.
+function computeReadTime(body) {
+  const wordCount = body.trim().split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(wordCount / 200));
 }
 
 function slugify(name) {
@@ -59,12 +67,13 @@ for (const filename of files) {
 
 const byFilename = new Map();
 const posts = baseFilenames.map((filename) => {
-  const meta = parseFrontmatter(filename);
+  const { meta, body } = parsePost(filename);
   const post = {
     slug: slugify(filename.replace(/\.md$/, '')),
     filename,
     ...meta,
     title: meta.title || filename.replace(/\.md$/, ''),
+    readTime: meta.readTime ?? computeReadTime(body),
   };
   byFilename.set(filename, post);
   return post;
@@ -72,9 +81,13 @@ const posts = baseFilenames.map((filename) => {
 
 for (const { baseFilename, lang, filename } of variantFiles) {
   const base = byFilename.get(baseFilename);
-  const meta = parseFrontmatter(filename);
+  const { meta, body } = parsePost(filename);
   base.translations ??= {};
-  base.translations[lang] = { ...meta, filename };
+  base.translations[lang] = {
+    ...meta,
+    filename,
+    readTime: meta.readTime ?? computeReadTime(body),
+  };
 }
 
 posts.sort((a, b) => (b.date || '').localeCompare(a.date || ''));

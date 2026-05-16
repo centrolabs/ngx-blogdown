@@ -225,6 +225,34 @@ Content.`,
     assert.ok(stdout.includes('5 post(s)'));
   });
 
+  it('should compute readTime from body word count at ~200 wpm', () => {
+    const words = Array(400).fill('word').join(' ');
+    writeFileSync(join(postsDir, 'long.md'), `title: Long\n---\n${words}`);
+
+    run(['--postsDir', postsDir, '--out', outFile]);
+    const index = JSON.parse(readFileSync(outFile, 'utf-8'));
+
+    assert.equal(index[0].readTime, 2);
+  });
+
+  it('should preserve readTime from frontmatter when explicitly set', () => {
+    writeFileSync(join(postsDir, 'fixed.md'), `title: Fixed\nreadTime: 99\n---\nshort body`);
+
+    run(['--postsDir', postsDir, '--out', outFile]);
+    const index = JSON.parse(readFileSync(outFile, 'utf-8'));
+
+    assert.equal(index[0].readTime, 99);
+  });
+
+  it('should clamp computed readTime to a minimum of 1 minute', () => {
+    writeFileSync(join(postsDir, 'tiny.md'), `title: Tiny\n---\nhi`);
+
+    run(['--postsDir', postsDir, '--out', outFile]);
+    const index = JSON.parse(readFileSync(outFile, 'utf-8'));
+
+    assert.equal(index[0].readTime, 1);
+  });
+
   it('should handle frontmatter with colons in quoted values', () => {
     writeFileSync(
       join(postsDir, 'colon.md'),
@@ -272,6 +300,7 @@ Inhalt.`,
           filename: 'Self Host 101.de.md',
           title: 'Self Host 101 (DE)',
           tagline: 'Wie wir unseren Stack betreiben',
+          readTime: 1,
         },
       });
     });
@@ -355,6 +384,7 @@ Inhalt.`,
         tagline: 'Tag',
         cover: 'alt.png',
         tags: ['a', 'b'],
+        readTime: 1,
       });
     });
   });

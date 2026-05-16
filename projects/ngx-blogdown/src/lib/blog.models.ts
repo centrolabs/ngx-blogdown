@@ -6,6 +6,10 @@ export interface BlogPostBase {
   filename: string;
   /** Display title of the post. */
   title: string;
+  /** Author name; sourced from frontmatter `author:`. Allowed `null` so consumers can model "intentionally unknown" distinctly from "field missing". */
+  author?: string | null;
+  /** Estimated reading time in whole minutes; sourced from frontmatter `readTime:` or auto-computed by the CLI from the body at ~200 wpm (minimum 1). */
+  readTime?: number;
   /**
    * Language variants of this post, keyed by lowercase language code (e.g. `'de'`).
    * Populated by the `ngx-blogdown-index` CLI when sibling `<base>.<lang>.md`
